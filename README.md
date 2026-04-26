@@ -1,12 +1,14 @@
-# 🧮 Infix to Postfix Compiler
+# 🧮 Infix to Postfix Compiler (Recursive Descent + Symbol Table)
 
-This project is a simple **compiler front-end** that converts **infix expressions** into **postfix notation (Reverse Polish Notation)** using a **recursive descent parser**.
+This project implements a simple **compiler front-end** that converts **infix expressions** into **postfix notation (Reverse Polish Notation)** using a **recursive descent parser**.
+
+It also includes a **symbol table** to manage identifiers and reserved keywords (`div`, `mod`).
 
 ---
 
 ## 📌 Features
 
-* Supports arithmetic expressions with:
+* Supports arithmetic operators:
 
   * `+`, `-`, `*`, `/`
   * `div`, `mod`
@@ -15,66 +17,91 @@ This project is a simple **compiler front-end** that converts **infix expression
   * Integers (`NUM`)
   * Identifiers (`ID`)
   * Parentheses `( )`
-* Implements:
+* Supports **multiple expressions** separated by `;`
+* Uses:
 
-  * **Lexical Analysis (Scanner)**
-  * **Syntax Analysis (Parser)**
-  * **Postfix Code Generation**
-
----
-
-## 🧠 How It Works
-
-The program reads an infix expression from a file, tokenizes it using a **lexer**, then parses it using a **recursive descent parser** based on a context-free grammar.
-
-During parsing, it generates **postfix output** by printing operators after their operands.
+  * File input/output (`input.txt` → `output.txt`)
+  * Symbol table for identifiers and keywords
 
 ---
 
-## 📖 Grammar (Final Form)
+## 🧠 Grammar (Final Form)
 
-The grammar used after eliminating ambiguity and left recursion:
+```plaintext
+start → parse EOF
 
-```
-start → expr EOF
+parse → expr ; parse
+      | ε
 
 expr → term moreterms
 
-moreterms → + term { print('+') } moreterms
-          | - term { print('-') } moreterms
+moreterms → + term { emit('+') } moreterms
+          | - term { emit('-') } moreterms
           | ε
 
 term → factor morefactors
 
-morefactors → * factor { print('*') } morefactors
-            | / factor { print('/') } morefactors
-            | div factor { print('DIV') } morefactors
-            | mod factor { print('MOD') } morefactors
+morefactors → * factor { emit('*') } morefactors
+            | / factor { emit('/') } morefactors
+            | div factor { emit('DIV') } morefactors
+            | mod factor { emit('MOD') } morefactors
             | ε
 
 factor → (expr)
-       | id   { print(id) }
-       | num  { print(num) }
+       | id   { emit(ID) }
+       | num  { emit(NUM) }
 ```
 
 ---
 
-## ⚙️ Components
+## ⚙️ How It Works
 
 ### 🔹 1. Lexical Analyzer (`lexan`)
 
-* Reads characters from input file
+* Reads characters from `input.txt`
 * Converts them into tokens:
 
   * `NUM`, `ID`, `DIV`, `MOD`
-  * Operators like `+`, `-`, `*`, `/`
-* Ignores whitespace
+* Uses the **symbol table** to:
+
+  * Store identifiers
+  * Recognize keywords (`div`, `mod`)
 
 ---
 
-### 🔹 2. Parser Functions
+### 🔹 2. Symbol Table
 
-* `expr()` → handles `+` and `-`
+Stores all identifiers and keywords.
+
+#### Structure:
+
+```plaintext
+index → (lexeme, token)
+```
+
+#### Example:
+
+```plaintext
+1 → ("x", ID)
+2 → ("y", ID)
+3 → ("div", DIV)
+4 → ("mod", MOD)
+```
+
+#### Functions:
+
+* `lookup(s)` → search for identifier
+* `insert(s, token)` → add new identifier
+* `init()` → preload keywords (`div`, `mod`)
+
+---
+
+### 🔹 3. Parser (Recursive Descent)
+
+Functions correspond to grammar rules:
+
+* `parse()` → handles multiple expressions
+* `expr()` → handles `+`, `-`
 * `term()` → handles `*`, `/`, `div`, `mod`
 * `factor()` → handles:
 
@@ -84,30 +111,26 @@ factor → (expr)
 
 ---
 
-### 🔹 3. Code Generation (`emit`)
+### 🔹 4. Code Generation (`emit`)
 
-* Outputs postfix notation
-* Example:
-
-  ```
-  Input:  2 + 3 * x
-  Output: NUM(2) NUM(3) ID(x) * +
-  ```
+Outputs postfix notation to `output.txt`.
 
 ---
 
 ## ▶️ Example
 
-### Input:
+### Input (`input.txt`)
 
-```
-2 + 5 * 3
+```plaintext
+2 + 3 * x;
+a mod 5;
 ```
 
-### Output:
+### Output (`output.txt`)
 
-```
-NUM(2) NUM(5) NUM(3) * +
+```plaintext
+NUM(2) NUM(3) ID(x) * +
+ID(a) NUM(5) MOD
 ```
 
 ---
@@ -118,15 +141,18 @@ NUM(2) NUM(5) NUM(3) * +
 * Operator Precedence
 * Left Recursion Elimination
 * Lexical Analysis
+* Symbol Table Design
 * Syntax-Directed Translation
 
 ---
 
 ## 📚 Notes
 
-* Parentheses are used only for parsing and do not appear in postfix output.
-* `div` performs integer division.
-* `mod` returns remainder.
+* Each expression must end with `;`
+* Parentheses are used only for parsing (not printed in output)
+* `div` → integer division
+* `mod` → remainder
+* Keywords (`div`, `mod`) are reserved (not treated as identifiers)
 
 ---
 
